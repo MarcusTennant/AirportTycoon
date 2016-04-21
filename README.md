@@ -17,6 +17,6 @@ An example graphics dislay with minimal processing using ncurses (this is the mo
 
 An example of the same exported data which has had it's coordinates warped by a hypothetical graphics system.
 
-![screenshot](./exampleImages/3dex.png)
+![screenshot](./exampleImages/3Dex.png)
 
 A fully 3D environment can be populated with out changing any of the game logic.
