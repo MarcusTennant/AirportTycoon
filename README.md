@@ -5,7 +5,7 @@ Airport Tycoon is a very early stage game being developed in C, mainly as a way 
 One important design decision is the complete seperation and black boxing of game logic and graphics handling. Allowing easy swapping of graphics engines.
 
 A few example images show: 
-![screenshot](./exampleImages/basicGrid.png)
+![screenshot](./exampleImages/gridBasic.png)
 The grid based layout exported by the game logic.
 ![screenshot](./exampleImages/term.png)
 An example graphics dislay with minimal processing using ncurses (this is the mode development will take place in). 
