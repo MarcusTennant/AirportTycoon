@@ -6,6 +6,6 @@
 
 void graphics_setupDisplay();
 void graphics_destroyDisplay();
-void graphics_display(building_st* buildArr, int buildSel, inventory_st* inventory, int key);
+void graphics_display(building_st* buildArr, int selX, int selY, inventory_st* inventory);
 
 #endif //GRAPHICS_H_

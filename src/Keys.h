@@ -12,6 +12,7 @@ typedef enum
 	RIGHT,
 	UP,
 	DOWN,
+	ROT,
 	CONT
 } keypress;
 

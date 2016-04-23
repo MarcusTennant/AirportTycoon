@@ -25,9 +25,10 @@ keypress keys_getKey()
 	else if (key == 'r')	return ADDRUNWAY;
 	else if (key == 'g')	return ADDGATE;
 	else if (key == 'd')	return DESTROY;
-	else if (key == 'i')	return UP;
-	else if (key == 'k')	return DOWN;
-	else if (key == 'j')	return LEFT;
+	else if (key == 'k')	return UP;
+	else if (key == 'j')	return DOWN;
+	else if (key == 'h')	return LEFT;
 	else if (key == 'l')	return RIGHT;
+	else if (key == 'e')	return ROT;
 	else 			return CONT;
 }

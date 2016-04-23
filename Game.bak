@@ -4,14 +4,12 @@
 
 #include "Inventory.h"
 #include "Building.h"
-#include "Grid.h"
 
 static void update(keypress key);
 static void setupUnits();
-static building_st* spaceOccupied(int xSel, int ySel);
+static int spaceOccupied(int xSel);
 static int isBlocked(int xSel, int xSize);
 
-void spawnBuilding(building_t type, int selX, int selY);
 void spawnRunway();
 void spawnTerminal();
 void spawnGate();
@@ -20,10 +18,9 @@ void destroyBuilding();
 
 inventory_st inventory = {0};
 
-building_st buildArr[GRID_SIZE_X][GRID_SIZE_Y];
-int curSelX = 0;
-int curSelY = 0;
-int rotation = 0;
+building_st buildArr[MAX_BUILDS];
+int buildSel = 0;
+
 
 int gameLoop()
 {
@@ -35,7 +32,7 @@ int gameLoop()
 	while((key = keys_getKey()) != QUIT)
 	{
 		update(key);
-		graphics_display(&(buildArr[0][0]), curSelX, curSelY, &inventory);
+		graphics_display(buildArr, buildSel, &inventory, key);
 	}
 
 	keys_destroyInput();
@@ -46,37 +43,26 @@ int gameLoop()
 
 static void update(keypress key)
 {
-	if (key == ADDRUNWAY)		spawnBuilding(RUNWAY | rotation, curSelX, curSelY);
-	else if (key == ADDTERMINAL) 	spawnBuilding(TERMINAL | rotation, curSelX, curSelY);
-	else if (key == ADDGATE) 	spawnBuilding(GATE | rotation, curSelX, curSelY);
-	//else if (key == DESTROY)	
-	
+	void (*action)() = 0; //TODO: spawning is similar enough these should be one function
+	if (key == ADDRUNWAY)		action = &spawnRunway;
+	else if (key == ADDTERMINAL) 	action = &spawnTerminal;
+	else if (key == ADDGATE) 	action = &spawnGate;
+	else if (key == DESTROY)	action = &destroyBuilding;
+
 	else if (key == RIGHT)
 	{
-		if (curSelX < GRID_SIZE_X - 1)
-			curSelX++;
+		if (buildSel < MAX_BUILDS - 1)
+			buildSel++;
 	}		
 
 	else if (key == LEFT)
 	{
-		if (curSelX > 0)
-			curSelX--;
+		if (buildSel > 0)
+			buildSel--;
 	}
-	
-	else if (key == DOWN)
-	{
-		if (curSelY < GRID_SIZE_Y - 1)
-			curSelY++;
-	}		
-	
-	else if (key == UP)
-	{
-		if (curSelY > 0)
-			curSelY--;
-	}	
 
-	else if (key == ROT) rotation = rotation ? 0 : 1;
-
+	if (action != 0)
+		(*action)();
 }
 
 static void setupUnits()
@@ -85,65 +71,43 @@ static void setupUnits()
 	inventory.reputation = 0; 
 	inventory.skill = 10;
 
-	for(int i = 0; i < GRID_SIZE_X; i++)
+	for(int i = 0; i < MAX_BUILDS; i++)
 	{
-		for (int j = 0; j < GRID_SIZE_Y; j++)
-			buildArr[i][j].exist = 0;
+		buildArr[buildSel].exist = 0;
 	}
 }
 
-static building_st* spaceOccupied(int xSel, int ySel)
-//checks if cell is already occupied
-//returns pointer to the occupying building if taken, 0 otherwise
+static int spaceOccupied(int xSel)
+//checks if grid is already occupied
+//returns ANCHOR_POS (top left corner) if taken, 0 otherwise
 {
-	if (xSel < 0 || xSel >= GRID_SIZE_X || ySel < 0 || ySel >= GRID_SIZE_Y)
+	if (xSel < 0 || xSel >= MAX_BUILDS)
 		return 0;
 
-	for (int i = 0; i < GRID_SIZE_X; i++){
-		for (int j = 0; j < GRID_SIZE_Y; j++)
-		{
-			building_st tempB = buildArr[i][j];
-			if ((tempB.xPos <= xSel) && (tempB.xPos+tempB.xSize-1 >= xSel))
-				if ((tempB.xPos <= ySel) && (tempB.yPos + tempB.ySize-1 >= ySel))
-					return &tempB;
-		}	
+	for (int i = 0; i < MAX_BUILDS; i++)
+	{
+		building_st tempB = buildArr[i];
+		if ((tempB.xPos <= xSel) && (tempB.xPos+tempB.xSize-1 >= xSel))
+			return i;
 	}
 
 	return 0;
 }
 
-void spawnBuilding(building_t type, int selX, int selY)
+static int isBlocked(int xSel, int xSize)
+//checks if there is open space for items which take up multiple grid spaces; 
+//returns index of blocking building if space exists, 0 otherwise
 {
-	int xSize, ySize;
-	if 	(type & TERMINAL) {xSize = 2; ySize = 3;} //TODO: there's better ways to do this
-	else if (type & RUNWAY) {xSize = 1; ySize = 2;}
-	else if (type & GATE)	{xSize = 1; ySize = 1;}
-
-	if (type & ROTATED) {
-		int tempSize = xSize;
-		xSize = ySize;
-		ySize = tempSize;
+	for (int i = 0; i < MAX_BUILDS; i++)
+	{
+		building_st tempB = buildArr[i];
+		if ((tempB.xPos > xSel) && (tempB.xPos <= (xSel + xSize-1)))
+			return i;
 	}
 
-//	if (!spaceOccupied(buildSel) && !isBlocked(buildSel, 2)){
-		building_st* tempB = &(buildArr[curSelX][curSelY]);
-		tempB->xPos = selX;
-		tempB->yPos = selY;
-		tempB->xSize = xSize;
-		tempB->ySize = ySize;
-		tempB->type = type;
-		tempB->exist = 1;
-
-		inventory.money -= 200;
-//	}
-
+	return 0;
 }
-/*static int isBlocked(int xSel, int xSize)
-{
-	building_st tempB = spaceOccupied(xSel
-}*/
 
-/*
 void spawnRunway()
 {
 	if (!spaceOccupied(buildSel))
@@ -176,24 +140,24 @@ void spawnRunway()
 		inventory.money -=  100;
 	}
 }
-*/
+
 void spawnTerminal()
 {
-//	if (!spaceOccupied(buildSel) && !isBlocked(buildSel, 2)){
-		building_st* tempB = &(buildArr[curSelX][curSelY]);
-		tempB->xPos = curSelX;
-		tempB->yPos = curSelY;
+	if (!spaceOccupied(buildSel) && !isBlocked(buildSel, 2)){
+		building_st* tempB = &buildArr[buildSel];
+		tempB->xPos = buildSel;
+		tempB->yPos = 0;
 		tempB->xSize = 3;
 		tempB->ySize = 3;
 		tempB->type = TERMINAL;
 		tempB->exist = 1;
 
 		inventory.money -= 200;
-//	}
+	}
 }
 
-void spawnGate(){}
-/*{
+void spawnGate()
+{
 	if (!spaceOccupied(buildSel))
 	{
 		building_st* tempB = &buildArr[buildSel];
@@ -224,12 +188,12 @@ void spawnGate(){}
 		inventory.money -=  50;
 	}
 	
-}*/
+}
 
 //TODO: a buildings left neightbor may be index at elemToDestroy-2
 // with current bildings it isn't an issue but it could cause future bugs
-void destroyBuilding(){}
-/*{
+void destroyBuilding()
+{
 	int elemToDestroy;
 	if ((elemToDestroy = spaceOccupied(buildSel)) != 0){ 
 		buildArr[elemToDestroy].exist = 0;
@@ -240,8 +204,8 @@ void destroyBuilding(){}
 
 		int type = buildArr[elemToDestroy].type;
 		if (type & NO_LWALL)
-			buildArr[elemToDestroy+1].type ^= NO_RWALL; //TODO: this works numerically, but is a bit confusing.
+			buildArr[elemToDestroy+1].type ^= NO_RWALL; //TODO: this work numerically, but is a bit confusing.
 		if (type & NO_RWALL)
 			buildArr[elemToDestroy-1].type ^= NO_LWALL;
 	}
-}*/
+}

@@ -2,12 +2,14 @@
 #include <stdio.h>
 
 #include "Graphics.h"
+#include "Grid.h"
 
-#define GRID_SCALE 6
 
 static void displayInventory();
 static void drawBuilding(building_st* build);
 
+static const int  GRID_SCALE_X = 6;
+static const int  GRID_SCALE_Y = 4;
 int termSizeY, termSizeX;
 WINDOW *borderWin, *win, *invWin;
 
@@ -39,16 +41,17 @@ void graphics_destroyDisplay()
 	endwin();
 }
 
-void graphics_display(building_st* buildArr, int buildSel, inventory_st* inv, int key)
+void graphics_display(building_st* buildArr, int selX, int selY, inventory_st* inv)
 {
 	werase(win);	
-	int i = 0;
-	for (i; i < MAX_BUILDS; i++)
-	{
-		if(buildArr[i].exist)
-			drawBuilding(&buildArr[i]);
+	for (int i = 0; i < GRID_SIZE_X; i++){
+		for (int j = 0; j < GRID_SIZE_Y; j++){	
+			int index = (i*GRID_SIZE_Y)+j;	
+			if(buildArr[index].exist)
+				drawBuilding(&(buildArr[index]));
+		}
 	}
-	mvwprintw(win, 1, 1+(buildSel*GRID_SCALE), "*");
+	mvwprintw(win, 1+selY*(GRID_SCALE_Y), 1+(selX*GRID_SCALE_X), "*");
 	wrefresh(win);
 
 	//TODO: if updated inv included in entity list update tempInv
@@ -69,10 +72,10 @@ static void displayInventory()
 
 static void drawBuilding(building_st* build)
 {
-	int x = build->xPos * GRID_SCALE;
-	int y = build->yPos * GRID_SCALE;
-	int xSize = build->xSize * (GRID_SCALE-1);
-	int ySize = build->ySize * (GRID_SCALE-1);
+	int x = build->xPos * GRID_SCALE_X;
+	int y = build->yPos * GRID_SCALE_Y;
+	int xSize = build->xSize * (GRID_SCALE_X-1);
+	int ySize = build->ySize * (GRID_SCALE_Y-1);
 	int type = build->type;
 	
 	mvwhline(win, y, x, 0, xSize);
@@ -102,7 +105,7 @@ static void drawBuilding(building_st* build)
 	if (type & RUNWAY) //print dashed line in middle of runway
 		mvwaddch(win, (y+y+ySize)/2, (x+x+xSize)/2, '-');
 	else if (type & TERMINAL)
-		mvwprintw(win, ySize-1, x+1, "terminal");
+		mvwprintw(win, y+ySize-1, x+1, "terminal");
 
 
 	mvwaddch(win, y, x, tl); //corners clockwise
